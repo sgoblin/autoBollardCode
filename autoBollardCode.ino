@@ -9,6 +9,7 @@
 #define INDICATORPIN 9
 
 #define BEFORECALC 4
+#define CHANGEPERREV 2
 
 int pinState = 0;
 int oldPinState;
@@ -70,7 +71,7 @@ void loop() {
       delay(50);
     }
     endTime = millis();
-    double RPM = (60000.0*BEFORECALC*0.5)/(endTime-startTime);
+    double RPM = (60000.0*BEFORECALC/CHANGEPERREV)/(endTime-startTime);
     
     /*Serial.print("Time: ");
     time=(endTime-startTime)/1000.0;
