@@ -8,13 +8,19 @@
 #define BUTTONPIN 3
 #define INDICATORPIN 9
 
-#define BEFORECALC 4
+//#define BEFORECALC 4
+#define MEASUREDELAY 500
 #define CHANGEPERREV 2
 
-int pinState = 0;
-int oldPinState;
+#define DELAYTIME 5
+#define DEBOUNCETIME 250
+
+volatile int changes=0;
 unsigned long startTime;
 unsigned long endTime;
+unsigned long recordTime;
+int duration;
+int oldFall=0;
 boolean running=false;
 //boolean oldRunning=false;
 boolean initialized=false;
@@ -30,6 +36,7 @@ unsigned long debounceDelay = 50;    // the debounce time; increase if the outpu
 File outputFile;
 
 void buttonPress(void);
+void tachoChange(void);
 
 void setup() {
   Serial.begin(9600);
@@ -47,6 +54,7 @@ void setup() {
   // Button stuff
   pinMode(BUTTONPIN, INPUT);
   attachInterrupt(digitalPinToInterrupt(BUTTONPIN), buttonPress, FALLING);
+  attachInterrupt(digitalPinToInterrupt(tachoPin), tachoChange, CHANGE);
 
   pinMode(INDICATORPIN, OUTPUT);
   digitalWrite(INDICATORPIN, LOW);
@@ -54,84 +62,78 @@ void setup() {
 }
 
 void loop() {
-  //Serial.println("Begin!");
-  int time;
-  if (running==true&&initialized==true){
-    startTime = millis();
-    int changes = 0;
-    while (changes < BEFORECALC){
-      oldPinState = pinState;
-      pinState = digitalRead(tachoPin);
-      if (oldPinState != pinState) {
-        //Serial.print("CHANGE ");
-        changes++;
-      }
-      //Serial.print("PINSTATE: ");
-      //Serial.println(pinState);
-      delay(50);
-    }
-    endTime = millis();
-    double RPM = (60000.0*BEFORECALC/CHANGEPERREV)/(endTime-startTime);
-    
-    /*Serial.print("Time: ");
-    time=(endTime-startTime)/1000.0;
-    outputFile.print(time);
-    Serial.print(time);
-
-    outputFile.print(",");*/
-
+  if(running==true&&initialized==true&&millis()-startTime>MEASUREDELAY){
+    endTime=millis();
+    double RPM = (60000.0*changes/CHANGEPERREV)/(endTime-startTime);
+  
+    Serial.print("Time: ");
+    duration=(endTime-recordTime);
+    outputFile.print(duration);
+    Serial.print(duration);
+  
+    outputFile.print(",");
+  
     Serial.print("    RPM: ");
     Serial.println(RPM);
+    
+    /*Serial.print("   changes: ");
+    Serial.println(changes);*/
+    
     outputFile.println(RPM);
 
+    changes = 0;
+    startTime=millis();
   } else {
-    delay(10);
-  }/* else if (oldRunning!=running){
+    delay(DELAYTIME);
   }
-    Serial.println("Closing file.");
-    outputFile.close();
-    delay(1500);
-  }
-  
-  oldRunning = running;
-  if(digitalRead(BUTTONPIN)&&oldRunning==digitalRead(BUTTONPIN)){
-    Serial.println("Button Pressed");
-    running = !running;
-  }*/
 }
+  
 
 void buttonPress(void){
   Serial.println("Button falling!");
-  if (running==true&&initialized==true){
-    // Stuff to close file, etc.
-    outputFile.close();
-    Serial.println("Closing file...");
-    initialized=false;
-    running=false;
-    digitalWrite(INDICATORPIN, LOW);
-    delay(100);
-  } else if (running==false&&initialized==false){
-    // Stuff to open file, etc.
-    // create a new file
-    char filename[] = "DATA00.CSV";
-    for (uint8_t i = 0; i < 100; i++) {
-      filename[4] = i/10 + '0';
-      filename[5] = i%10 + '0';
-      if (! SD.exists(filename)) {
-        // only open a new file if it doesn't exist
-        outputFile = SD.open(filename, FILE_WRITE);
-        break;  // leave the loop!
+  if (millis()-oldFall>DEBOUNCETIME){
+    oldFall=millis();
+    if (running==true&&initialized==true){
+      // Stuff to close file, etc.
+      outputFile.close();
+      Serial.println("Closing file...");
+      initialized=false;
+      running=false;
+      digitalWrite(INDICATORPIN, LOW);
+      delay(100);
+    } else if (running==false&&initialized==false){
+      // Stuff to open file, etc.
+      // create a new file
+      char filename[] = "DATA00.CSV";
+      for (uint8_t i = 0; i < 100; i++) {
+        filename[4] = i/10 + '0';
+        filename[5] = i%10 + '0';
+        if (! SD.exists(filename)) {
+          // only open a new file if it doesn't exist
+          outputFile = SD.open(filename, FILE_WRITE);
+          break;  // leave the loop!
+        }
       }
+      // outputFile.println("Time,RPM");
+      outputFile.println("RPM");
+      Serial.print(filename);
+      Serial.println(" successfully initialized!");
+      digitalWrite(INDICATORPIN, HIGH);
+      initialized=true;
+      running=true;
+  
+      changes=0;
+      startTime=millis();
+      recordTime=startTime;
+    } else {
+      Serial.println("Something went wrong. Trying to close file.");
+      outputFile.close();
     }
-    // outputFile.println("Time,RPM");
-    outputFile.println("RPM");
-    Serial.print(filename);
-    Serial.println(" successfully initialized!");
-    digitalWrite(INDICATORPIN, HIGH);
-    initialized=true;
-    running=true;
   } else {
-    Serial.println("Something went wrong. Trying to close file.");
-    outputFile.close();
+    Serial.println("Not enough time has passed since the last event. Debouncing.");
   }
+}
+
+void tachoChange(void) {
+  changes++;
 }
