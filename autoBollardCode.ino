@@ -114,8 +114,8 @@ void buttonPress(void){
           break;  // leave the loop!
         }
       }
-      // outputFile.println("Time,RPM");
-      outputFile.println("RPM");
+      outputFile.println("Time,RPM");
+      //outputFile.println("RPM");
       Serial.print(filename);
       Serial.println(" successfully initialized!");
       digitalWrite(INDICATORPIN, HIGH);
