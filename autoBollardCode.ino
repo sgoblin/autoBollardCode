@@ -1,12 +1,18 @@
 // Auto-Bollard 2018 (Ryan Meshulam/Ryan Leung)
 
+#include "HX711.h"
 #include <SD.h>
 #include <SPI.h>
+
+// Load cell calibration
+#define calibration_factor -10860.0 //calibrated with 750g test load
 
 // Change when plugged in to Arduino
 #define tachoPin 2
 #define BUTTONPIN 3
 #define INDICATORPIN 9
+#define DOUT  5
+#define CLK  6
 
 //#define BEFORECALC 4
 #define MEASUREDELAY 500
@@ -14,6 +20,9 @@
 
 #define DELAYTIME 5
 #define DEBOUNCETIME 250
+
+// Load cell object
+HX711 scale;
 
 volatile int changes=0;
 unsigned long startTime;
@@ -58,6 +67,11 @@ void setup() {
 
   pinMode(INDICATORPIN, OUTPUT);
   digitalWrite(INDICATORPIN, LOW);
+
+  // Load cell initialization
+  scale.begin(DOUT, CLK);
+  scale.set_scale(calibration_factor); 
+  scale.tare();  //Assuming there is no weight on the scale at start up, reset the scale to 0
   
 }
 
@@ -74,12 +88,18 @@ void loop() {
     outputFile.print(",");
   
     Serial.print("    RPM: ");
-    Serial.println(RPM);
+    Serial.print(RPM);
     
     /*Serial.print("   changes: ");
     Serial.println(changes);*/
     
-    outputFile.println(RPM);
+    outputFile.print(RPM);
+
+    Serial.print(scale.get_units(), 2); //"scale.get_units(), n" returns a float with n sigfigs
+    Serial.println(" N"); //Units can change but you'll need to refactor the calibration_factor
+
+    outputFile.print(",");
+    outputFile.println(scale.get_units());
 
     changes = 0;
     startTime=millis();
@@ -114,7 +134,7 @@ void buttonPress(void){
           break;  // leave the loop!
         }
       }
-      outputFile.println("Time,RPM");
+      outputFile.println("Time(ms),RPM,Force(N)");
       //outputFile.println("RPM");
       Serial.print(filename);
       Serial.println(" successfully initialized!");
