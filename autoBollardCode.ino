@@ -1,4 +1,6 @@
-// Auto-Bollard 2018 (Ryan Meshulam/Ryan Leung)
+// Auto-Bollard 2018
+// GPL v3
+// SUBC: the UBC Submarine Design Team
 
 #include "HX711.h"
 #include <SD.h>
@@ -17,7 +19,6 @@
 //#define BEFORECALC 4
 #define MEASUREDELAY 500
 #define CHANGEPERREV 2
-
 #define DELAYTIME 5
 #define DEBOUNCETIME 250
 
