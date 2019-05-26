@@ -110,14 +110,19 @@ void loop() {
 
     if (LOADCELLON==true){
       Serial.print(scale.get_units(), 2); //"scale.get_units(), n" returns a float with n sigfigs
-      Serial.println(" N"); //Units can change but you'll need to refactor the calibration_factor
+      Serial.print(" N"); //Units can change but you'll need to refactor the calibration_factor
 
       if (SDON==true){
         outputFile.print(",");
-        outputFile.println(scale.get_units());
+        outputFile.print(scale.get_units());
       }
     }
 
+    Serial.println("");
+    if (SDON==true){
+      outputFile.println("");
+    }
+    
     changes = 0;
     startTime=millis();
   } else {
