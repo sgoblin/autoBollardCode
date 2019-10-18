@@ -23,9 +23,9 @@
 
 //#define BEFORECALC 4
 #define MEASUREDELAY 500
-#define CHANGEPERREV 2
+#define CHANGEPERREV 10
 #define DELAYTIME 5
-#define DEBOUNCETIME 250
+#define DEBOUNCETIME 500
 
 // Load cell object
 HX711 scale;
@@ -34,8 +34,8 @@ volatile int changes=0;
 unsigned long startTime;
 unsigned long endTime;
 unsigned long recordTime;
-int duration;
-int oldFall=0;
+unsigned long duration;
+unsigned long oldFall=0;
 boolean running=false;
 //boolean oldRunning=false;
 boolean initialized=false;
@@ -95,9 +95,11 @@ void loop() {
       outputFile.print(duration);
     }
     Serial.print(duration);
+    Serial.print(":");
+    Serial.print(endTime-startTime);
     
     if (TACHOON==true){
-      double RPM = (60000.0*changes/CHANGEPERREV)/(duration);
+      double RPM = (60.0*changes/CHANGEPERREV)/((endTime-startTime)/1000.0);
 
       if (SDON==true){
         outputFile.print(",");
@@ -106,6 +108,8 @@ void loop() {
       
       Serial.print("    RPM: ");
       Serial.print(RPM);
+      Serial.print("    Changes:  ");
+      Serial.print(changes);
     }    
 
     if (LOADCELLON==true){
